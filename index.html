@@ -407,6 +407,45 @@ body {
 }
 .analysis-stat .as-num { font-size: 20px; font-weight: 800; color: var(--primary); }
 
+/* ===== 成就系统 ===== */
+.achieve-toast {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  background: linear-gradient(135deg,#FFD54F,#FF8F00); color: #fff;
+  padding: 20px 28px; border-radius: 20px; text-align: center;
+  z-index: 999; box-shadow: 0 8px 40px rgba(255,143,0,0.4);
+  animation: achieveIn 0.5s ease;
+}
+@keyframes achieveIn { from { transform: translate(-50%,-50%) scale(0); opacity:0; } to { transform: translate(-50%,-50%) scale(1); opacity:1; } }
+.achieve-toast .ach-icon { font-size: 48px; }
+.achieve-toast .ach-title { font-size: 18px; font-weight: 800; margin: 6px 0; }
+.achieve-toast .ach-desc { font-size: 13px; opacity: 0.9; }
+.badge-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.badge-item {
+  width: 40px; height: 40px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 20px;
+  background: #E8E8E8;
+}
+.badge-item.earned { background: #FFF8E1; box-shadow: 0 2px 8px rgba(255,143,0,0.3); }
+
+/* ===== 游戏化 ===== */
+.quiz-timer { font-size: 36px; font-weight: 800; text-align: center; padding: 8px; color: var(--primary); }
+.quiz-timer.urgent { color: var(--danger); animation: pulse 0.5s infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.streak-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 15px;
+  background: linear-gradient(135deg,#FF6D00,#FF9100); color: #fff;
+  font-size: 13px; font-weight: 700; margin: 8px 0;
+}
+.speech-word { font-size: 48px; font-weight: 800; text-align: center; padding: 20px; color: var(--primary); }
+.speech-result { text-align: center; font-size: 16px; padding: 10px; }
+.reader-text { font-size: 18px; line-height: 2; padding: 4px; }
+.reader-text .read-word { cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: all 0.15s; }
+.reader-text .read-word:hover { background: #FFF3E0; }
+.read-word-popup {
+  position: fixed; background: #fff; padding: 10px 16px; border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 300; font-size: 14px;
+}
+
 /* ===== 拼写练习 ===== */
 .spell-prompt { font-size: 32px; font-weight: 800; color: var(--primary); padding: 16px; margin-bottom: 12px; }
 .spell-score { display: flex; justify-content: center; gap: 24px; padding: 8px; font-size: 14px; }
@@ -1669,6 +1708,129 @@ window.addEventListener('beforeunload', function() {
   stats[todayKey].timeSec = (stats[todayKey].timeSec || 0) + elapsed;
   saveStats(stats);
 });
+
+// ==================== FSRS 记忆算法 ====================
+var _getMO = getMastery;
+getMastery = function(w) {
+  var m = _getMO(w);
+  if (!m.stability) { m.stability = Math.pow(2, m.level||1); m.lastReview = 0; }
+  return m;
+};
+function getEffLevel(m) {
+  var h = m.lastReview ? (Date.now() - m.lastReview) / 3600000 : 999;
+  if (h > m.stability * 48) return Math.max(0, m.level - 2);
+  if (h > m.stability * 24) return Math.max(0, m.level - 1);
+  return m.level;
+}
+var _rWO = rateWord;
+rateWord = function(result) {
+  if (state.words.length === 0) return;
+  var w = state.words[state.currentWordIndex];
+  var m = getMastery(w); m.reviews++; m.lastReview = Date.now();
+  if (result === 2) { m.stability = m.stability * 2.5; m.level = Math.min(4, m.level + 1); showToast('👍 记住了！'); }
+  else if (result === 1) { m.stability = m.stability * 1.2; showToast('🤔 再看看'); }
+  else { m.stability = Math.max(0.5, m.stability * 0.4); m.level = Math.max(0, m.level - 1); showToast('💪 多练几次'); }
+  updateMasteryDisplay(); checkAchievements();
+  if (state.smartReview) { applySmartReview(); if (state.words.length===0) { showToast('🎉 全部掌握！'); return; } }
+  nextWord();
+};
+var _uMDO = updateMasteryDisplay;
+updateMasteryDisplay = function() {
+  if (state.words.length === 0) return;
+  var w = state.words[state.currentWordIndex];
+  var m = getMastery(w); var e = getEffLevel(m);
+  document.getElementById('masteryStars').textContent = getMasteryStars(e);
+  document.getElementById('masteryLabel').textContent = getMasteryLabel(e) + ' | ' + m.reviews + '次 | ~' + Math.round(m.stability) + '天';
+  document.getElementById('masteryInfo').style.display = 'block';
+};
+var _aSR = applySmartReview;
+applySmartReview = function() {
+  if (!state._allWords) state._allWords = state.words.slice();
+  var now = Date.now();
+  var need = state._allWords.filter(function(w) {
+    var m = getMastery(w);
+    if (m.level >= 4) return (m.lastReview ? (now - m.lastReview) / 3600000 : 9999) > m.stability * 24;
+    return m.level < 4;
+  });
+  if (need.length === 0) {
+    state.words = state._allWords; state._allWords = null; state.smartReview = false;
+    var b = document.getElementById('btnSmartReview');
+    b.innerHTML = '🧠 智能复习：关'; b.style.background = '#fff'; b.style.color = 'var(--primary)'; b.style.borderColor = 'var(--primary)';
+    showToast('🎉 全部掌握！');
+  } else { state.words = need; }
+};
+
+// ==================== 成就系统 ====================
+var ACHS = [
+  { id:'f', icon:'🌟', title:'初识英语', desc:'第一次复习', check:function(){return totR()>=1;} },
+  { id:'10', icon:'📚', title:'小有积累', desc:'累计复习10次', check:function(){return totR()>=10;} },
+  { id:'50', icon:'🎯', title:'坚持不懈', desc:'累计复习50次', check:function(){return totR()>=50;} },
+  { id:'m10', icon:'⭐', title:'掌握达人', desc:'掌握10个单词', check:function(){return cntM()>=10;} },
+  { id:'m50', icon:'🏆', title:'词汇大师', desc:'掌握50个单词', check:function(){return cntM()>=50;} },
+  { id:'3d', icon:'🔥', title:'三日连学', desc:'连续学习3天', check:function(){return strk()>=3;} },
+  { id:'7d', icon:'💎', title:'周冠军', desc:'连续学习7天', check:function(){return strk()>=7;} },
+  { id:'pf', icon:'💯', title:'满分通关', desc:'一次测验全对', check:function(){return state._lastQPerfect;} },
+];
+function totR() { var n=0; for(var k in state.wordMastery) n+=state.wordMastery[k].reviews||0; return n; }
+function cntM() { var n=0; for(var k in state.wordMastery) if(state.wordMastery[k].level>=4) n++; return n; }
+function strk() { var s=loadStats(),n=0,d=new Date(); for(var i=0;i<30;i++){ if(s[d.toISOString().slice(0,10)])n++;else break; d.setDate(d.getDate()-1); } return n; }
+var _badges = {};
+try { _badges = JSON.parse(localStorage.getItem('ai_english_badges')||'{}'); } catch(e) {}
+function checkAchievements() {
+  ACHS.forEach(function(a) {
+    if (!_badges[a.id] && a.check()) {
+      _badges[a.id]=true; localStorage.setItem('ai_english_badges', JSON.stringify(_badges));
+      var el=document.createElement('div'); el.className='achieve-toast';
+      el.innerHTML='<div class=\"ach-icon\">'+a.icon+'</div><div class=\"ach-title\">'+a.title+'</div><div class=\"ach-desc\">'+a.desc+'</div>';
+      document.body.appendChild(el);
+      setTimeout(function(){el.style.opacity='0';el.style.transition='opacity 0.5s';},2000);
+      setTimeout(function(){el.remove();},2500);
+    }
+  });
+}
+var _uRO = updateReportPage;
+updateReportPage = function() {
+  _uRO();
+  var mc = document.getElementById('masteryOverviewContent');
+  if (mc) mc.innerHTML += '<div class=\"badge-row\" style=\"margin-top:10px\">' + ACHS.map(function(a) {
+    return '<span class=\"badge-item' + (_badges[a.id]?' earned':'') + '\" title=\"' + a.title + ': ' + a.desc + '\">' + a.icon + '</span>';
+  }).join('') + '</div>';
+};
+var _fQO = finishQuiz;
+finishQuiz = function() {
+  state._lastQPerfect = (state.quizQuestions.length > 0 && state.correctCount === state.quizQuestions.length);
+  _fQO(); checkAchievements();
+};
+
+// ==================== 游戏化：限时模式 ====================
+var _qTimed=false, _qTimer=null, _qTime=0, _qStreak=0;
+var _rQO = renderQuestion;
+renderQuestion = function() { _rQO(); if (_qTimed) startQTimer(); };
+function startQTimer() {
+  if (!_qTimed||state.quizAnswered) return;
+  _qTime=10; showQTimer();
+  _qTimer=setInterval(function(){
+    _qTime--; showQTimer();
+    if (_qTime<=3){var t=document.getElementById('quizTimerDisp');if(t)t.classList.add('urgent');}
+    if (_qTime<=0){clearInterval(_qTimer);if(!state.quizAnswered) timeUpQ();}
+  },1000);
+}
+function showQTimer(){var t=document.getElementById('quizTimerDisp');if(t)t.textContent='⏱ '+_qTime+'s';}
+function timeUpQ(){
+  state.quizAnswered=true; _qStreak=0; state.wrongCount++;
+  document.getElementById('wrongCount').textContent=state.wrongCount;
+  document.querySelectorAll('.quiz-option').forEach(function(b){b.disabled=true;});
+  showToast('⏰ 时间到！'); document.getElementById('btnNextQuestion').style.display='block'; updateStreakUI();
+}
+var _cAO = checkAnswer;
+checkAnswer = function(idx,el){ if(_qTimer)clearInterval(_qTimer);
+  var q=state.quizQuestions[state.currentQuizIndex]; var ok=idx===q.answer;
+  _cAO(idx,el); _qStreak=ok?_qStreak+1:0; updateStreakUI();
+};
+function updateStreakUI(){
+  var el=document.getElementById('streakDisp');
+  if(el){el.textContent=_qStreak>1?'🔥 连击 x'+_qStreak:'';el.style.display=_qStreak>1?'inline-block':'none';}
+}
 
 // ==================== 启动 ====================
 init();
