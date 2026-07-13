@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌟 AI 英语小助手 - 小学英语学习</title>
+<title>🌟 单词小达人 - AI 英语学习</title>
 <style>
 /* ===== 全局样式 ===== */
 :root {
@@ -363,6 +363,49 @@ body {
 @media (min-width: 520px) {
   .app-container { min-height: 100vh; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
 }
+
+/* ===== 记忆曲线评分 ===== */
+.rating-bar {
+  background: #FFF8E1; border-radius: var(--radius-sm);
+  padding: 12px 16px; margin-top: 12px;
+  border: 2px dashed #FFE082;
+}
+.rating-label { font-size: 12px; color: #F9A825; font-weight: 600; display: block; margin-bottom: 8px; text-align: center; }
+.rating-btns { display: flex; gap: 8px; justify-content: center; }
+.rating-btn {
+  flex: 1; max-width: 100px; padding: 8px 4px;
+  border-radius: 12px; border: none;
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+  text-align: center; line-height: 1.4;
+}
+.rating-btn:active { transform: scale(0.94); }
+.rating-again { background: #FFEBEE; color: #E53935; }
+.rating-again:hover { background: #FFCDD2; }
+.rating-hard { background: #FFF3E0; color: #EF6C00; }
+.rating-hard:hover { background: #FFE0B2; }
+.rating-good { background: #E8F5E9; color: #2E7D32; }
+.rating-good:hover { background: #C8E6C9; }
+.mastery-info {
+  text-align: center; margin-top: 8px; font-size: 13px;
+  padding: 6px 12px; background: #F5F5F5; border-radius: 20px;
+}
+.mastery-stars { font-size: 16px; letter-spacing: 2px; }
+
+/* ===== 错题分析页 ===== */
+.error-word-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: #FFF3E0;
+  border-radius: var(--radius-sm); margin-bottom: 6px;
+  font-size: 14px;
+}
+.error-word-item .ew-english { font-weight: 700; color: #E65100; }
+.error-word-item .ew-chinese { font-size: 12px; color: #888; margin-left: 8px; }
+.error-word-item .ew-count { font-size: 12px; color: #E53935; font-weight: 600; }
+.analysis-stat {
+  flex: 1; text-align: center; padding: 8px;
+  background: #F5F5F5; border-radius: var(--radius-sm); font-size: 13px;
+}
+.analysis-stat .as-num { font-size: 20px; font-weight: 800; color: var(--primary); }
 </style>
 </head>
 <body>
@@ -476,35 +519,54 @@ body {
           <button class="btn btn-outline btn-sm" onclick="nextWord()">下一个 ➡</button>
         </div>
         <div class="progress-bar"><div class="progress-fill" id="wordProgress" style="width:10%"></div></div>
+        <!-- 记忆曲线评分 -->
+        <div class="rating-bar" id="ratingBar">
+          <span class="rating-label">这个词你记住了吗？</span>
+          <div class="rating-btns">
+            <button class="rating-btn rating-again" onclick="rateWord(0)">😰<br>不认识</button>
+            <button class="rating-btn rating-hard" onclick="rateWord(1)">🤔<br>模糊</button>
+            <button class="rating-btn rating-good" onclick="rateWord(2)">😊<br>认识</button>
+          </div>
+        </div>
+        <!-- 掌握度指示 -->
+        <div class="mastery-info" id="masteryInfo" style="display:none">
+          <span>📊 掌握度：</span><span class="mastery-stars" id="masteryStars">⭐</span>
+          <span style="margin-left:8px;font-size:11px;color:var(--text-light)" id="masteryLabel"></span>
+        </div>
+        <div style="text-align:center;margin-top:4px">
+          <button class="btn btn-sm btn-outline" id="btnSmartReview" onclick="toggleSmartReview()" style="display:none">
+            🧠 智能复习模式：关
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- ========== AI 对话页 ========== -->
-    <div class="page" id="page-chat">
+    <!-- ========== 错题分析页 ========== -->
+    <div class="page" id="page-analysis">
       <div class="card">
-        <div class="card-title">💬 和 AI 老师说英语</div>
+        <div class="card-title">📊 错题本</div>
         <p style="font-size:13px;color:var(--text-light);margin-bottom:10px">
-          AI 老师会陪你练习英语对话，回答时尽量用英语哦！
+          记录测验中的错题，AI 帮你分析薄弱环节
         </p>
-        <div class="topic-chips" id="chatTopics">
-          <span class="tag" data-topic="自我介绍">👋 自我介绍</span>
-          <span class="tag" data-topic="我的家庭">👨‍👩‍👧 我的家庭</span>
-          <span class="tag" data-topic="我喜欢的食物">🍕 喜欢的食物</span>
-          <span class="tag" data-topic="我的学校">🏫 我的学校</span>
-          <span class="tag" data-topic="我的爱好">⚽ 我的爱好</span>
-          <span class="tag" data-topic="天气">🌈 今天天气</span>
+        <div id="analysisSummary" style="margin-bottom:12px;font-size:14px">
+          <span style="color:var(--text-light)">暂无错题记录，去做几道测验吧 🎮</span>
         </div>
+        <div id="analysisStats" style="display:flex;gap:8px;margin-bottom:12px"></div>
       </div>
-      <div class="chat-area" id="chatArea">
-        <div class="chat-msg ai">
-          👋 Hello! I'm your English teacher. Let's practice English together!<br>
-          What's your name?
-        </div>
+      <div class="card" id="errorWordsCard" style="display:none">
+        <div class="card-title">❌ 易错单词</div>
+        <div id="errorWordsList"></div>
       </div>
-      <div class="chat-input-row">
-        <input type="text" id="chatInput" placeholder="输入英语或中文..." onkeypress="if(event.key==='Enter')sendMessage()">
-        <button class="btn btn-primary" onclick="sendMessage()">发送</button>
+      <button class="btn btn-primary btn-block" onclick="aiAnalyzeErrors()" id="btnAnalyze" style="display:none">
+        🤖 AI 分析易错点
+      </button>
+      <div class="card" id="analysisResult" style="display:none">
+        <div class="card-title">🧠 AI 分析结果</div>
+        <div id="analysisContent" style="font-size:14px;line-height:1.8"></div>
       </div>
+      <button class="btn btn-outline btn-block" onclick="clearErrors()" id="btnClearErrors" style="display:none;margin-top:8px">
+        🗑 清空错题本
+      </button>
     </div>
 
     <!-- ========== 测验闯关页 ========== -->
@@ -556,11 +618,11 @@ body {
     <button class="tab-item active" data-page="page-vocabulary" onclick="switchTab(this)">
       <span class="tab-icon">📚</span> 单词学习
     </button>
-    <button class="tab-item" data-page="page-chat" onclick="switchTab(this)">
-      <span class="tab-icon">💬</span> AI 对话
-    </button>
     <button class="tab-item" data-page="page-quiz" onclick="switchTab(this)">
       <span class="tab-icon">🎮</span> 闯关测验
+    </button>
+    <button class="tab-item" data-page="page-analysis" onclick="switchTab(this)">
+      <span class="tab-icon">📊</span> 错题分析
     </button>
   </div>
 </div>
@@ -611,15 +673,17 @@ const state = {
   words: [],
   currentWordIndex: 0,
   isFlipped: false,
-  vocabMode: 'builtin',  // 'builtin' | 'ai'
-  // 对话
-  chatHistory: [],
+  vocabMode: 'builtin',
+  smartReview: false,       // 智能复习模式
+  wordMastery: {},          // {word: {level:0-4, reviews:0, lastResult:'...'}}
   // 测验
   quizQuestions: [],
   currentQuizIndex: 0,
   correctCount: 0,
   wrongCount: 0,
   quizAnswered: false,
+  // 错题本
+  errorWords: [],           // [{word, correct, userAnswer, type, time}]
 };
 
 // ==================== 初始化 ====================
@@ -636,21 +700,11 @@ function init() {
   // 初始化内置词库单元列表
   onBuiltinGradeChange();
 
-  // 设置话题标签点击
-  document.querySelectorAll('#vocabTopics .tag').forEach(tag => {
-    tag.addEventListener('click', function() {
-      document.querySelectorAll('#vocabTopics .tag').forEach(t => t.classList.remove('selected'));
-      this.classList.add('selected');
-    });
-  });
-  
-  document.querySelectorAll('#chatTopics .tag').forEach(tag => {
-    tag.addEventListener('click', function() {
-      const topic = this.dataset.topic;
-      document.getElementById('chatInput').value = `我们来聊聊：${topic}`;
-      sendMessage();
-    });
-  });
+  // 恢复错题本
+  try {
+    state.errorWords = JSON.parse(localStorage.getItem('ai_english_errors') || '[]');
+  } catch(e) { state.errorWords = []; }
+  updateErrorDisplay();
 }
 
 // ==================== Tab 切换 ====================
@@ -883,6 +937,7 @@ function updateWordCard() {
   document.getElementById('wordProgress').style.width = `${((state.currentWordIndex + 1) / state.words.length) * 100}%`;
   state.isFlipped = false;
   document.getElementById('wordCard').classList.remove('flipped');
+  updateMasteryDisplay();
 }
 
 function flipCard() {
@@ -943,79 +998,131 @@ if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 }
 
-// ==================== AI 对话模块 ====================
-const CHAT_SYSTEM_PROMPT = `你是一个友好、耐心的小学英语老师，名字叫"小英老师"。你的任务：
-1. 用简单英语和学生对话，偶尔用中文解释
-2. 当学生用英语回答时，如果有语法错误，用括号标注正确说法
-3. 鼓励学生多开口，每次回复控制在3-5句话
-4. 根据学生的英语水平调整难度（小学1-6年级）
-5. 回复格式：先说英语（加粗提示正确说法），然后附中文翻译
+// ==================== 记忆曲线 ====================
+function getWordKey(w) { return w.english.toLowerCase(); }
+function getMastery(w) {
+  var k = getWordKey(w);
+  if (!state.wordMastery[k]) state.wordMastery[k] = { level: 0, reviews: 0 };
+  return state.wordMastery[k];
+}
+function getMasteryStars(lv) {
+  if (lv >= 4) return '⭐⭐⭐⭐'; if (lv >= 3) return '⭐⭐⭐';
+  if (lv >= 2) return '⭐⭐'; if (lv >= 1) return '⭐'; return '☆';
+}
+function getMasteryLabel(lv) {
+  if (lv >= 4) return '已掌握'; if (lv >= 3) return '基本会了';
+  if (lv >= 2) return '学习中'; if (lv >= 1) return '见过面'; return '新单词';
+}
+function rateWord(result) {
+  if (state.words.length === 0) return;
+  var w = state.words[state.currentWordIndex];
+  var m = getMastery(w); m.reviews++;
+  if (result === 2) { m.level = Math.min(4, m.level + 1); showToast('👍 记住了！'); }
+  else if (result === 1) { m.level = Math.max(0, m.level - 1); showToast('🤔 再看看吧'); }
+  else { m.level = Math.max(0, m.level - 2); showToast('💪 多练几次就好了'); }
+  updateMasteryDisplay();
+  if (state.smartReview) { applySmartReview(); if (state.words.length === 0) { showToast('🎉 全部掌握！'); return; } }
+  nextWord();
+}
+function toggleSmartReview() {
+  state.smartReview = !state.smartReview;
+  var btn = document.getElementById('btnSmartReview');
+  if (state.smartReview) {
+    applySmartReview();
+    btn.innerHTML = '🧠 只复习未掌握';
+    btn.style.background = 'var(--primary)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--primary)';
+    showToast('🧠 智能复习：只显示未掌握的单词');
+  } else {
+    if (state._allWords && state._allWords.length > 0) { state.words = state._allWords; state._allWords = null; }
+    btn.innerHTML = '🧠 智能复习模式：关';
+    btn.style.background = '#fff'; btn.style.color = 'var(--primary)'; btn.style.borderColor = 'var(--primary)';
+    showToast('📚 显示全部单词');
+  }
+  state.currentWordIndex = 0; state.isFlipped = false;
+  if (state.words.length > 0) updateWordCard();
+  document.getElementById('wordCard').classList.remove('flipped');
+}
+function applySmartReview() {
+  if (!state._allWords) state._allWords = state.words.slice();
+  var need = state._allWords.filter(function(w) { return getMastery(w).level < 4; });
+  if (need.length === 0) {
+    state.words = state._allWords; state._allWords = null; state.smartReview = false;
+    var btn = document.getElementById('btnSmartReview');
+    btn.innerHTML = '🧠 智能复习模式：关';
+    btn.style.background = '#fff'; btn.style.color = 'var(--primary)'; btn.style.borderColor = 'var(--primary)';
+    showToast('🎉 全部掌握！太棒了！');
+  } else { state.words = need; }
+}
+function updateMasteryDisplay() {
+  if (state.words.length === 0) return;
+  var w = state.words[state.currentWordIndex];
+  var m = getMastery(w);
+  document.getElementById('masteryStars').textContent = getMasteryStars(m.level);
+  document.getElementById('masteryLabel').textContent = getMasteryLabel(m.level) + ' | 复习' + m.reviews + '次';
+  document.getElementById('masteryInfo').style.display = 'block';
+}
 
-示例回复：
-**Great answer!** (You said "I go to school yesterday" → better: "I went to school yesterday")
-你太棒了！记得"昨天"的事情要用过去式哦。`;
-
-async function sendMessage() {
+// ==================== 错题本 ====================
+function recordError(word, correct, user, qtype) {
+  state.errorWords.push({ word: word, correct: correct, user: user, type: qtype, time: new Date().toLocaleString() });
+  localStorage.setItem('ai_english_errors', JSON.stringify(state.errorWords));
+  updateErrorDisplay();
+}
+function updateErrorDisplay() {
+  var s = document.getElementById('analysisSummary');
+  var st = document.getElementById('analysisStats');
+  var wc = document.getElementById('errorWordsCard');
+  var wl = document.getElementById('errorWordsList');
+  var ba = document.getElementById('btnAnalyze');
+  var bc = document.getElementById('btnClearErrors');
+  if (state.errorWords.length === 0) {
+    s.innerHTML = '<span style="color:var(--text-light)">✅ 暂无错题记录，去做几道测验吧 🎮</span>';
+    st.innerHTML = ''; wc.style.display = 'none'; ba.style.display = 'none'; bc.style.display = 'none'; return;
+  }
+  var cnt = {};
+  state.errorWords.forEach(function(e) {
+    var k = e.word.toLowerCase();
+    if (!cnt[k]) cnt[k] = { word: e.word, correct: e.correct, n: 0 };
+    cnt[k].n++;
+  });
+  var sorted = Object.values(cnt).sort(function(a, b) { return b.n - a.n; });
+  s.innerHTML = '共 <strong style="color:var(--danger)">' + state.errorWords.length + '</strong> 道错题，涉及 <strong>' + sorted.length + '</strong> 个单词';
+  st.innerHTML = '<div class="analysis-stat"><div class="as-num">' + state.errorWords.length + '</div>错题总数</div><div class="analysis-stat"><div class="as-num">' + sorted.length + '</div>易错单词</div>';
+  wc.style.display = 'block';
+  wl.innerHTML = sorted.slice(0, 15).map(function(x) {
+    return '<div class="error-word-item"><span><span class="ew-english">' + x.word + '</span><span class="ew-chinese">' + (x.correct || '') + '</span></span><span class="ew-count">错' + x.n + '次</span><button class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:11px" onclick="speak(\'' + x.word + '\')">🔊</button></div>';
+  }).join('');
+  ba.style.display = 'block'; bc.style.display = 'block';
+}
+async function aiAnalyzeErrors() {
   if (!checkAPISettings()) return;
-  
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
-  
-  input.value = '';
-  
-  // 添加用户消息
-  appendChatMessage('user', text);
-  state.chatHistory.push({ role: 'user', content: text });
-  
-  // 显示加载中
-  const loadingEl = appendChatMessage('ai', '<div class="loading-dots"><span></span><span></span><span></span></div>', true);
-  
+  if (state.errorWords.length === 0) { showToast('没有错题'); return; }
+  var btn = document.getElementById('btnAnalyze'); btn.disabled = true; btn.textContent = '⏳ AI 分析中...';
+  var cnt = {};
+  state.errorWords.forEach(function(e) {
+    var k = e.word.toLowerCase();
+    if (!cnt[k]) cnt[k] = { word: e.word, correct: e.correct, n: 0 };
+    cnt[k].n++;
+  });
+  var top = Object.values(cnt).sort(function(a,b){return b.n-a.n;}).slice(0,10).map(function(w){return w.word+'(错'+w.n+'次)';}).join(', ');
   try {
-    const messages = [
-      { role: 'system', content: CHAT_SYSTEM_PROMPT },
-      ...state.chatHistory.slice(-10), // 保留最近10条
-    ];
-    
-    const reply = await callAI(messages, { temperature: 0.8, max_tokens: 500 });
-    
-    // 移除加载动画
-    loadingEl.remove();
-    
-    // 渲染 AI 回复（支持简单 markdown）
-    appendChatMessage('ai', formatChatReply(reply));
-    state.chatHistory.push({ role: 'assistant', content: reply });
-    
-    // 滚动到底部
-    const chatArea = document.getElementById('chatArea');
-    chatArea.scrollTop = chatArea.scrollHeight;
-  } catch (err) {
-    loadingEl.remove();
-    appendChatMessage('ai', '抱歉，出了点问题 😢\n' + err.message);
-    console.error(err);
+    var prompt = '以下是小学生在英语测验中的错题分析：\n易错单词：' + top + '\n总错题数：' + state.errorWords.length + '\n\n请分析薄弱环节，给出学习建议（中文，亲切鼓励，200字内）';
+    var content = await callAI([{ role: 'system', content: '你是小学英语老师，分析简洁鼓励。' }, { role: 'user', content: prompt }], { temperature: 0.7, max_tokens: 500 });
+    document.getElementById('analysisResult').style.display = 'block';
+    document.getElementById('analysisContent').innerHTML = content.replace(/\n/g, '<br>');
+    document.getElementById('analysisResult').scrollIntoView({ behavior: 'smooth' });
+    showToast('✅ 分析完成！');
+  } catch (err) { showToast('❌ 分析失败：' + err.message); }
+  finally { btn.disabled = false; btn.textContent = '🤖 AI 分析易错点'; }
+}
+function clearErrors() {
+  if (confirm('确定要清空所有错题记录吗？')) {
+    state.errorWords = []; localStorage.removeItem('ai_english_errors');
+    updateErrorDisplay(); document.getElementById('analysisResult').style.display = 'none';
+    showToast('🗑 错题本已清空');
   }
 }
 
-function appendChatMessage(role, content, isTemp = false) {
-  const chatArea = document.getElementById('chatArea');
-  const div = document.createElement('div');
-  div.className = `chat-msg ${role}`;
-  div.innerHTML = content;
-  if (!isTemp) chatArea.appendChild(div);
-  else chatArea.appendChild(div);
-  chatArea.scrollTop = chatArea.scrollHeight;
-  return isTemp ? div : null;
-}
-
-function formatChatReply(text) {
-  // 处理 **bold** 
-  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  // 处理换行
-  text = text.replace(/\n/g, '<br>');
-  return text;
-}
-
-// ==================== 测验闯关模块 ====================
 async function startQuiz() {
   if (!checkAPISettings()) return;
   
@@ -1147,8 +1254,10 @@ function checkAnswer(index, el) {
     state.wrongCount++;
     document.getElementById('wrongCount').textContent = state.wrongCount;
     showToast('😅 不对哦，看看正确答案吧');
+    // 记录错题
+    recordError(q.options[q.answer], q.options[q.answer], q.options[index], '选择题');
   }
-  
+
   // 显示解释
   const explanation = document.createElement('div');
   explanation.style.cssText = 'text-align:center;margin-top:8px;font-size:13px;color:var(--text-light)';
@@ -1177,6 +1286,8 @@ function checkSpell() {
     state.wrongCount++;
     document.getElementById('wrongCount').textContent = state.wrongCount;
     resultEl.innerHTML = `<span style="color:var(--danger)">😅 正确答案是：<strong>${q.answer}</strong></span>`;
+    // 记录错题
+    recordError(q.answer, q.answer, input, '拼写题');
   }
   
   if (q.explanation) {
