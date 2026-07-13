@@ -406,6 +406,20 @@ body {
   background: #F5F5F5; border-radius: var(--radius-sm); font-size: 13px;
 }
 .analysis-stat .as-num { font-size: 20px; font-weight: 800; color: var(--primary); }
+
+/* ===== 拼写练习 ===== */
+.spell-prompt { font-size: 32px; font-weight: 800; color: var(--primary); padding: 16px; margin-bottom: 12px; }
+.spell-score { display: flex; justify-content: center; gap: 24px; padding: 8px; font-size: 14px; }
+
+/* ===== 学习报告 ===== */
+.report-stats { display: flex; gap: 8px; }
+.rstat { flex: 1; text-align: center; padding: 10px 4px; background: linear-gradient(135deg,#F5F7FF,#EEF2FF); border-radius: var(--radius-sm); }
+.rstat-num { font-size: 22px; font-weight: 800; color: var(--primary); }
+.rstat-label { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.checkin-bar { display: flex; gap: 4px; margin-top: 10px; padding: 4px 0; overflow-x: auto; }
+.checkin-dot { width: 30px; height: 30px; border-radius: 50%; background: #E8E8E8; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.checkin-dot.done { background: var(--success); color: #fff; }
+.checkin-dot.today { border: 2px solid var(--primary); background: #fff; }
 </style>
 </head>
 <body>
@@ -541,32 +555,79 @@ body {
       </div>
     </div>
 
-    <!-- ========== 错题分析页 ========== -->
-    <div class="page" id="page-analysis">
+    <!-- ========== 拼写练习页 ========== -->
+    <div class="page" id="page-spell">
       <div class="card">
-        <div class="card-title">📊 错题本</div>
-        <p style="font-size:13px;color:var(--text-light);margin-bottom:10px">
-          记录测验中的错题，AI 帮你分析薄弱环节
+        <div class="card-title">✍️ 拼写练习</div>
+        <p style="font-size:12px;color:var(--text-light);margin-bottom:8px" id="spellWordInfo">
+          请先在「单词学习」页面加载词库
         </p>
-        <div id="analysisSummary" style="margin-bottom:12px;font-size:14px">
-          <span style="color:var(--text-light)">暂无错题记录，去做几道测验吧 🎮</span>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="btn btn-sm" id="tabSpellWrite" style="flex:1;background:var(--primary);color:#fff;border-radius:20px" onclick="switchSpellMode('write')">📝 看中文拼写</button>
+          <button class="btn btn-sm" id="tabSpellListen" style="flex:1;background:#E8E8E8;color:#666;border-radius:20px" onclick="switchSpellMode('listen')">🎧 听写模式</button>
         </div>
-        <div id="analysisStats" style="display:flex;gap:8px;margin-bottom:12px"></div>
+        <div class="spell-score">
+          <span>✅ <strong id="spellCorrect">0</strong></span>
+          <span>❌ <strong id="spellWrong">0</strong></span>
+          <span>📝 <strong id="spellTotal">0</strong></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="spellProgress" style="width:0%"></div></div>
       </div>
-      <div class="card" id="errorWordsCard" style="display:none">
-        <div class="card-title">❌ 易错单词</div>
-        <div id="errorWordsList"></div>
+      <div id="spellArea">
+        <div class="card" style="text-align:center">
+          <div class="spell-prompt" id="spellPrompt">苹果</div>
+          <button class="btn btn-sm btn-outline" id="spellSpeakBtn" style="margin-bottom:10px;display:none" onclick="spellSpeakCurrent()">🔊 再听一遍</button>
+          <div class="input-group">
+            <input type="text" id="spellInput" placeholder="输入英文拼写..." style="text-align:center;font-size:22px" autocomplete="off" autocapitalize="off">
+          </div>
+          <button class="btn btn-primary btn-block" onclick="checkSpellWord()" id="btnCheckSpell">✅ 提交</button>
+          <div id="spellResultArea" style="margin-top:10px;font-size:15px;min-height:24px"></div>
+        </div>
+        <button class="btn btn-outline btn-block" onclick="nextSpellWord()" id="btnNextSpell" style="display:none">➡ 下一个</button>
+        <button class="btn btn-primary btn-block" onclick="startSpellPractice()" id="btnStartSpell" style="display:none">🔄 重新开始</button>
       </div>
-      <button class="btn btn-primary btn-block" onclick="aiAnalyzeErrors()" id="btnAnalyze" style="display:none">
-        🤖 AI 分析易错点
-      </button>
-      <div class="card" id="analysisResult" style="display:none">
-        <div class="card-title">🧠 AI 分析结果</div>
-        <div id="analysisContent" style="font-size:14px;line-height:1.8"></div>
+      <div id="spellEmpty" style="text-align:center;padding:40px;color:var(--text-light)">
+        <div style="font-size:48px;margin-bottom:12px">📭</div>
+        <p>还没有加载单词</p>
+        <p style="font-size:12px">请先切换到「📚 单词学习」加载词库</p>
       </div>
-      <button class="btn btn-outline btn-block" onclick="clearErrors()" id="btnClearErrors" style="display:none;margin-top:8px">
-        🗑 清空错题本
-      </button>
+    </div>
+
+    <!-- ========== 学习报告页 ========== -->
+    <div class="page" id="page-report">
+      <!-- 今日统计 -->
+      <div class="card">
+        <div class="card-title">📊 学习报告</div>
+        <div class="report-stats" id="reportStats">
+          <div class="rstat"><div class="rstat-num" id="rWordsLearned">0</div><div class="rstat-label">学习单词</div></div>
+          <div class="rstat"><div class="rstat-num" id="rWordsReviewed">0</div><div class="rstat-label">复习单词</div></div>
+          <div class="rstat"><div class="rstat-num" id="rQuizRate">-</div><div class="rstat-label">测验正确率</div></div>
+          <div class="rstat"><div class="rstat-num" id="rTimeMin">0</div><div class="rstat-label">学习分钟</div></div>
+        </div>
+        <!-- 打卡日历 -->
+        <div class="checkin-bar" id="checkinBar"></div>
+      </div>
+      <!-- 掌握进度 -->
+      <div class="card" id="masteryOverview">
+        <div class="card-title">📈 掌握进度</div>
+        <div id="masteryOverviewContent" style="font-size:13px;color:var(--text-light)">暂无学习记录</div>
+      </div>
+      <!-- 错题本（折叠） -->
+      <div class="card">
+        <div class="card-title" style="cursor:pointer" onclick="toggleErrorSection()">❌ 错题本 <span style="font-size:12px;color:var(--text-light)" id="errorCountLabel"></span></div>
+        <div id="errorSection" style="display:none">
+          <div id="analysisSummary" style="margin-bottom:8px;font-size:14px"></div>
+          <div id="errorWordsList"></div>
+          <button class="btn btn-primary btn-block btn-sm" onclick="aiAnalyzeErrors()" id="btnAnalyze" style="display:none">🤖 AI 分析易错点</button>
+          <div id="analysisResult" style="display:none;margin-top:8px">
+            <div class="card-title">🧠 AI 分析结果</div>
+            <div id="analysisContent" style="font-size:13px;line-height:1.7"></div>
+          </div>
+          <button class="btn btn-outline btn-block btn-sm" onclick="clearErrors()" id="btnClearErrors" style="display:none;margin-top:8px">🗑 清空错题本</button>
+        </div>
+      </div>
+      <!-- 家长报告 -->
+      <button class="btn btn-secondary btn-block" onclick="showParentReport()">👨‍👩‍👧 家长报告</button>
     </div>
 
     <!-- ========== 测验闯关页 ========== -->
@@ -618,11 +679,14 @@ body {
     <button class="tab-item active" data-page="page-vocabulary" onclick="switchTab(this)">
       <span class="tab-icon">📚</span> 单词学习
     </button>
+    <button class="tab-item" data-page="page-spell" onclick="switchTab(this)">
+      <span class="tab-icon">✍️</span> 拼写练习
+    </button>
     <button class="tab-item" data-page="page-quiz" onclick="switchTab(this)">
       <span class="tab-icon">🎮</span> 闯关测验
     </button>
-    <button class="tab-item" data-page="page-analysis" onclick="switchTab(this)">
-      <span class="tab-icon">📊</span> 错题分析
+    <button class="tab-item" data-page="page-report" onclick="switchTab(this)">
+      <span class="tab-icon">📊</span> 学习报告
     </button>
   </div>
 </div>
@@ -1070,14 +1134,15 @@ function recordError(word, correct, user, qtype) {
 }
 function updateErrorDisplay() {
   var s = document.getElementById('analysisSummary');
-  var st = document.getElementById('analysisStats');
-  var wc = document.getElementById('errorWordsCard');
+  var el = document.getElementById('errorCountLabel');
   var wl = document.getElementById('errorWordsList');
   var ba = document.getElementById('btnAnalyze');
   var bc = document.getElementById('btnClearErrors');
+  if (!s) return;
   if (state.errorWords.length === 0) {
-    s.innerHTML = '<span style="color:var(--text-light)">✅ 暂无错题记录，去做几道测验吧 🎮</span>';
-    st.innerHTML = ''; wc.style.display = 'none'; ba.style.display = 'none'; bc.style.display = 'none'; return;
+    s.innerHTML = '<span style="color:var(--text-light)">✅ 暂无错题记录</span>';
+    if (el) el.textContent = '';
+    if (wl) wl.innerHTML = ''; ba.style.display = 'none'; bc.style.display = 'none'; return;
   }
   var cnt = {};
   state.errorWords.forEach(function(e) {
@@ -1086,10 +1151,9 @@ function updateErrorDisplay() {
     cnt[k].n++;
   });
   var sorted = Object.values(cnt).sort(function(a, b) { return b.n - a.n; });
+  if (el) el.textContent = '(' + state.errorWords.length + '题/' + sorted.length + '词)';
   s.innerHTML = '共 <strong style="color:var(--danger)">' + state.errorWords.length + '</strong> 道错题，涉及 <strong>' + sorted.length + '</strong> 个单词';
-  st.innerHTML = '<div class="analysis-stat"><div class="as-num">' + state.errorWords.length + '</div>错题总数</div><div class="analysis-stat"><div class="as-num">' + sorted.length + '</div>易错单词</div>';
-  wc.style.display = 'block';
-  wl.innerHTML = sorted.slice(0, 15).map(function(x) {
+  if (wl) wl.innerHTML = sorted.slice(0, 12).map(function(x) {
     return '<div class="error-word-item"><span><span class="ew-english">' + x.word + '</span><span class="ew-chinese">' + (x.correct || '') + '</span></span><span class="ew-count">错' + x.n + '次</span><button class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:11px" onclick="speak(\'' + x.word + '\')">🔊</button></div>';
   }).join('');
   ba.style.display = 'block'; bc.style.display = 'block';
@@ -1337,6 +1401,273 @@ document.addEventListener('keydown', function(e) {
 // ==================== 点击模态框外部关闭 ====================
 document.getElementById('settingsModal').addEventListener('click', function(e) {
   if (e.target === this) closeSettings();
+});
+
+// ==================== 拼写练习模块 ====================
+var _spellWords = [];
+var _spellIndex = 0;
+var _spellCorrect = 0;
+var _spellWrong = 0;
+var _spellMode = 'write'; // 'write' | 'listen'
+
+function switchSpellMode(mode) {
+  _spellMode = mode;
+  var btnW = document.getElementById('tabSpellWrite');
+  var btnL = document.getElementById('tabSpellListen');
+  if (mode === 'write') {
+    btnW.style.background = 'var(--primary)'; btnW.style.color = '#fff';
+    btnL.style.background = '#E8E8E8'; btnL.style.color = '#666';
+  } else {
+    btnL.style.background = 'var(--primary)'; btnL.style.color = '#fff';
+    btnW.style.background = '#E8E8E8'; btnW.style.color = '#666';
+  }
+  startSpellPractice();
+}
+
+function startSpellPractice() {
+  if (state.words.length === 0) {
+    document.getElementById('spellEmpty').style.display = 'block';
+    document.getElementById('spellArea').style.display = 'none';
+    document.getElementById('spellWordInfo').textContent = '请先在「单词学习」页面加载词库';
+    return;
+  }
+  document.getElementById('spellEmpty').style.display = 'none';
+  document.getElementById('spellArea').style.display = 'block';
+  _spellWords = state.words.slice().sort(function() { return Math.random() - 0.5; });
+  _spellIndex = 0; _spellCorrect = 0; _spellWrong = 0;
+  document.getElementById('spellWordInfo').textContent = '共 ' + _spellWords.length + ' 个单词';
+  updateSpellScore();
+  renderSpellWord();
+  document.getElementById('btnStartSpell').style.display = 'none';
+  document.getElementById('btnNextSpell').style.display = 'none';
+}
+
+function renderSpellWord() {
+  if (_spellIndex >= _spellWords.length) {
+    finishSpellPractice();
+    return;
+  }
+  var w = _spellWords[_spellIndex];
+  var promptEl = document.getElementById('spellPrompt');
+  var speakBtn = document.getElementById('spellSpeakBtn');
+  var inputEl = document.getElementById('spellInput');
+  var resultEl = document.getElementById('spellResultArea');
+  var btnCheck = document.getElementById('btnCheckSpell');
+  var btnNext = document.getElementById('btnNextSpell');
+
+  inputEl.value = '';
+  inputEl.disabled = false;
+  resultEl.innerHTML = '';
+  btnCheck.style.display = 'block';
+  btnNext.style.display = 'none';
+
+  if (_spellMode === 'listen') {
+    promptEl.textContent = '🎧 请听发音拼写';
+    speakBtn.style.display = 'block';
+    setTimeout(function() { speak(w.english); }, 300);
+  } else {
+    promptEl.textContent = w.chinese;
+    speakBtn.style.display = 'none';
+  }
+  inputEl.focus();
+  updateSpellScore();
+}
+
+function spellSpeakCurrent() {
+  if (_spellIndex < _spellWords.length) speak(_spellWords[_spellIndex].english);
+}
+
+function checkSpellWord() {
+  if (_spellIndex >= _spellWords.length) return;
+  var w = _spellWords[_spellIndex];
+  var input = document.getElementById('spellInput').value.trim();
+  var resultEl = document.getElementById('spellResultArea');
+  var btnCheck = document.getElementById('btnCheckSpell');
+  var btnNext = document.getElementById('btnNextSpell');
+
+  if (!input) { showToast('请输入单词拼写'); return; }
+
+  var isCorrect = input.toLowerCase() === w.english.toLowerCase();
+  if (isCorrect) {
+    _spellCorrect++;
+    resultEl.innerHTML = '<span style="color:var(--success)">✅ 正确！</span> <strong>' + w.english + '</strong> ' + w.chinese;
+    // 记忆曲线加分
+    var m = getMastery(w); m.reviews++; m.level = Math.min(4, m.level + 1);
+    recordStat('spellCorrect');
+  } else {
+    _spellWrong++;
+    resultEl.innerHTML = '<span style="color:var(--danger)">❌ 错误</span> 正确答案：<strong>' + w.english + '</strong> ' + w.chinese;
+    var m = getMastery(w); m.reviews++; m.level = Math.max(0, m.level - 1);
+    recordError(w.english, w.english, input, '拼写练习');
+    recordStat('spellWrong');
+  }
+
+  document.getElementById('spellInput').disabled = true;
+  btnCheck.style.display = 'none';
+  btnNext.style.display = 'block';
+  updateSpellScore();
+}
+
+function nextSpellWord() {
+  _spellIndex++;
+  renderSpellWord();
+}
+
+function updateSpellScore() {
+  document.getElementById('spellCorrect').textContent = _spellCorrect;
+  document.getElementById('spellWrong').textContent = _spellWrong;
+  document.getElementById('spellTotal').textContent = _spellIndex;
+  var total = _spellWords.length || 1;
+  document.getElementById('spellProgress').style.width = ((_spellIndex / total) * 100) + '%';
+}
+
+function finishSpellPractice() {
+  var total = _spellWords.length;
+  var rate = total > 0 ? Math.round(_spellCorrect / total * 100) : 0;
+  document.getElementById('spellPrompt').textContent = '🎊 练习完成！';
+  document.getElementById('spellResultArea').innerHTML = '正确率：<strong>' + rate + '%</strong>（' + _spellCorrect + '/' + total + '）';
+  document.getElementById('spellInput').style.display = 'none';
+  document.getElementById('btnCheckSpell').style.display = 'none';
+  document.getElementById('btnNextSpell').style.display = 'none';
+  document.getElementById('btnStartSpell').style.display = 'block';
+  document.getElementById('spellProgress').style.width = '100%';
+  recordStat('spellFinish', _spellCorrect, total);
+}
+
+// ==================== 学习统计 ====================
+var todayKey = new Date().toISOString().slice(0,10);
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem('ai_english_stats') || '{}'); } catch(e) { return {}; }
+}
+function saveStats(stats) { localStorage.setItem('ai_english_stats', JSON.stringify(stats)); }
+function recordStat(action, val1, val2) {
+  var stats = loadStats();
+  if (!stats[todayKey]) stats[todayKey] = { wordsLearned: 0, wordsReviewed: 0, quizCorrect: 0, quizTotal: 0, timeSec: 0 };
+  var d = stats[todayKey];
+  if (action === 'wordLearn') d.wordsLearned = (d.wordsLearned || 0) + 1;
+  if (action === 'wordReview') d.wordsReviewed = (d.wordsReviewed || 0) + 1;
+  if (action === 'quizCorrect') { d.quizCorrect = (d.quizCorrect || 0) + 1; d.quizTotal = (d.quizTotal || 0) + 1; }
+  if (action === 'quizWrong') d.quizTotal = (d.quizTotal || 0) + 1;
+  if (action === 'spellCorrect') { d.wordsReviewed = (d.wordsReviewed || 0) + 1; }
+  if (action === 'spellWrong') {}
+  if (action === 'spellFinish') { d.wordsReviewed = (d.wordsReviewed || 0) + (val1 || 0); }
+  saveStats(stats);
+  if (document.getElementById('page-report').classList.contains('active')) updateReportPage();
+}
+
+function updateReportPage() {
+  var stats = loadStats();
+  var d = stats[todayKey] || { wordsLearned: 0, wordsReviewed: 0, quizCorrect: 0, quizTotal: 0, timeSec: 0 };
+  document.getElementById('rWordsLearned').textContent = d.wordsLearned || 0;
+  document.getElementById('rWordsReviewed').textContent = d.wordsReviewed || 0;
+  var qr = d.quizTotal > 0 ? Math.round((d.quizCorrect || 0) / d.quizTotal * 100) + '%' : '-';
+  document.getElementById('rQuizRate').textContent = qr;
+  document.getElementById('rTimeMin').textContent = Math.round((d.timeSec || 0) / 60);
+  // 打卡
+  var checkinBar = document.getElementById('checkinBar');
+  var days = [];
+  for (var i = 6; i >= 0; i--) {
+    var d2 = new Date(); d2.setDate(d2.getDate() - i);
+    var key = d2.toISOString().slice(0,10);
+    var hasData = !!stats[key];
+    var isToday = key === todayKey;
+    var cls = hasData ? (isToday ? 'checkin-dot done today' : 'checkin-dot done') : (isToday ? 'checkin-dot today' : 'checkin-dot');
+    var label = ['日','一','二','三','四','五','六'][d2.getDay()];
+    days.push('<div class="' + cls + '">' + label + '</div>');
+  }
+  checkinBar.innerHTML = days.join('');
+  // 掌握进度
+  var totalMastered = 0, totalLearning = 0;
+  for (var k in state.wordMastery) {
+    var m = state.wordMastery[k];
+    if (m.level >= 4) totalMastered++;
+    else if (m.level > 0) totalLearning++;
+  }
+  var mc = document.getElementById('masteryOverviewContent');
+  if (totalMastered + totalLearning === 0) {
+    mc.innerHTML = '<span style="color:var(--text-light)">暂无学习记录，去背几个单词吧 📚</span>';
+  } else {
+    mc.innerHTML = '✨ 已掌握 <strong>' + totalMastered + '</strong> 个单词，学习中 <strong>' + totalLearning + '</strong> 个';
+  }
+}
+
+function toggleErrorSection() {
+  var sec = document.getElementById('errorSection');
+  sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+  if (sec.style.display === 'block') updateErrorDisplay();
+}
+
+function showParentReport() {
+  var stats = loadStats();
+  var totalWords = 0, totalMastered = 0;
+  for (var k in state.wordMastery) {
+    totalWords++;
+    if (state.wordMastery[k].level >= 4) totalMastered++;
+  }
+  var totalErrors = state.errorWords.length;
+  var totalDays = Object.keys(stats).length;
+  var totalQuizCorrect = 0, totalQuizTotal = 0;
+  for (var k in stats) {
+    var d = stats[k];
+    totalQuizCorrect += (d.quizCorrect || 0);
+    totalQuizTotal += (d.quizTotal || 0);
+  }
+  var quizRate = totalQuizTotal > 0 ? Math.round(totalQuizCorrect / totalQuizTotal * 100) : 0;
+  var report = '<div class="parent-report">';
+  report += '<h3>👨‍👩‍👧 家长报告</h3>';
+  report += '<p>📅 累计学习天数：<strong>' + totalDays + '</strong> 天</p>';
+  report += '<p>📚 接触单词数：<strong>' + totalWords + '</strong> 个</p>';
+  report += '<p>✅ 已掌握单词：<strong>' + totalMastered + '</strong> 个（' + (totalWords > 0 ? Math.round(totalMastered / totalWords * 100) : 0) + '%）</p>';
+  report += '<p>🎯 测验正确率：<strong>' + quizRate + '%</strong></p>';
+  report += '<p>❌ 错题数量：<strong>' + totalErrors + '</strong> 道</p>';
+  if (totalErrors > 0) {
+    report += '<p style="font-size:12px;color:var(--text-light)">💡 建议：多关注错题本中的易错单词，用拼写练习巩固</p>';
+  }
+  report += '</div>';
+  
+  var existing = document.getElementById('parentReportBox');
+  if (existing) existing.remove();
+  var box = document.createElement('div');
+  box.id = 'parentReportBox';
+  box.innerHTML = report;
+  var reportPage = document.getElementById('page-report');
+  reportPage.insertBefore(box, reportPage.lastElementChild);
+  box.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ==================== 页面切换钩子 ====================
+var _origSwitchTab = switchTab;
+switchTab = function(el) {
+  _origSwitchTab(el);
+  var page = el.dataset.page;
+  if (page === 'page-spell') { startSpellPractice(); }
+  if (page === 'page-report') { updateReportPage(); updateErrorDisplay(); }
+};
+
+// ==================== 学习埋点（单词卡片评分时记录） ====================
+var _origRateWord = rateWord;
+rateWord = function(result) {
+  recordStat(result === 2 ? 'wordLearn' : 'wordReview');
+  _origRateWord(result);
+};
+
+// 测验统计埋点
+var _origCheckAnswer = checkAnswer;
+checkAnswer = function(index, el) {
+  var q = state.quizQuestions[state.currentQuizIndex];
+  var isCorrect = index === q.answer;
+  recordStat(isCorrect ? 'quizCorrect' : 'quizWrong');
+  _origCheckAnswer(index, el);
+};
+
+// 启动时记录
+var _sessionStart = Date.now();
+window.addEventListener('beforeunload', function() {
+  var elapsed = Math.round((Date.now() - _sessionStart) / 1000);
+  var stats = loadStats();
+  if (!stats[todayKey]) stats[todayKey] = { wordsLearned: 0, wordsReviewed: 0, quizCorrect: 0, quizTotal: 0, timeSec: 0 };
+  stats[todayKey].timeSec = (stats[todayKey].timeSec || 0) + elapsed;
+  saveStats(stats);
 });
 
 // ==================== 启动 ====================
