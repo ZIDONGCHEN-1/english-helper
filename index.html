@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌟 AI 英语小助手 - 小学英语学习</title>
+<style>
+/* ===== 全局样式 ===== */
+:root {
+  --primary: #4A90D9;
+  --primary-dark: #357ABD;
+  --secondary: #FFB74D;
+  --success: #66BB6A;
+  --danger: #EF5350;
+  --pink: #F06292;
+  --purple: #AB47BC;
+  --bg: #F0F4FF;
+  --card: #FFFFFF;
+  --text: #333333;
+  --text-light: #666666;
+  --border: #E0E0E0;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 520px;
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ===== 顶部导航 ===== */
+.header {
+  background: linear-gradient(135deg, var(--primary), #667eea);
+  color: #fff;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 12px rgba(74,144,217,0.3);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header h1 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.header h1 .icon { font-size: 26px; }
+.header-actions { display: flex; gap: 8px; }
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: rgba(255,255,255,0.2);
+  color: #fff; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.btn-icon:hover { background: rgba(255,255,255,0.35); transform: scale(1.05); }
+
+/* ===== 主内容区 ===== */
+.main-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  padding-bottom: 80px;
+}
+
+/* ===== 底部 Tab 导航 ===== */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  display: flex;
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #999;
+  font-size: 10px;
+  transition: all 0.2s;
+  gap: 3px;
+}
+.tab-item .tab-icon { font-size: 22px; }
+.tab-item.active { color: var(--primary); font-weight: 600; }
+.tab-item:active { transform: scale(0.95); }
+
+/* ===== 页面区块 ===== */
+.page { display: none; animation: fadeIn 0.3s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== 卡片样式 ===== */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== 按钮样式 ===== */
+.btn {
+  padding: 10px 24px;
+  border-radius: 25px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); box-shadow: 0 4px 14px rgba(74,144,217,0.4); }
+.btn-secondary { background: var(--secondary); color: #fff; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-outline { background: #fff; color: var(--primary); border: 2px solid var(--primary); }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn-block { display: block; width: 100%; text-align: center; }
+
+/* ===== 输入框 ===== */
+.input-group { margin-bottom: 12px; }
+.input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text-light); }
+.input-group input, .input-group select, .input-group textarea {
+  width: 100%; padding: 10px 14px;
+  border: 2px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; transition: all 0.2s; font-family: inherit;
+  background: #FAFAFA;
+}
+.input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+  outline: none; border-color: var(--primary); background: #fff;
+}
+
+/* ===== 设置面板 ===== */
+.settings-panel {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.settings-panel h3 { font-size: 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+/* ===== 单词卡片 ===== */
+.word-card-container {
+  perspective: 1000px;
+  height: 280px;
+  margin: 16px 0;
+}
+.word-card {
+  width: 100%; height: 100%;
+  position: relative;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+.word-card.flipped { transform: rotateY(180deg); }
+.word-card-front, .word-card-back {
+  position: absolute;
+  width: 100%; height: 100%;
+  backface-visibility: hidden;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.word-card-front {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+.word-card-back {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: #fff;
+  transform: rotateY(180deg);
+}
+.word-english { font-size: 42px; font-weight: 800; letter-spacing: 2px; margin-bottom: 8px; }
+.word-phonetic { font-size: 16px; opacity: 0.85; margin-bottom: 16px; }
+.word-chinese { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+.word-example { font-size: 15px; opacity: 0.9; font-style: italic; text-align: center; line-height: 1.5; }
+.word-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; }
+.word-counter { font-size: 14px; color: var(--text-light); font-weight: 600; }
+
+/* ===== 主题标签 ===== */
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.tag {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tag:hover { border-color: var(--primary); color: var(--primary); }
+.tag.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ===== 聊天区域 ===== */
+.chat-area {
+  height: 350px;
+  overflow-y: auto;
+  background: #F8F9FC;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chat-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  animation: fadeIn 0.3s ease;
+}
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-msg.ai {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+.chat-msg .correct { color: var(--success); font-weight: 600; }
+.chat-msg .incorrect { color: var(--danger); text-decoration: line-through; }
+.chat-input-row { display: flex; gap: 8px; }
+.chat-input-row input { flex: 1; }
+.topic-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+/* ===== 测验区 ===== */
+.quiz-question {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  margin: 16px 0;
+  padding: 16px;
+  background: #F8F9FC;
+  border-radius: var(--radius-sm);
+}
+.quiz-options { display: flex; flex-direction: column; gap: 10px; }
+.quiz-option {
+  padding: 14px 18px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.quiz-option:hover { border-color: var(--primary); background: #F0F4FF; }
+.quiz-option.correct { background: #E8F5E9; border-color: var(--success); color: var(--success); }
+.quiz-option.wrong { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
+.quiz-option:disabled { pointer-events: none; }
+.quiz-score { display: flex; justify-content: space-around; align-items: center; margin: 12px 0; }
+.quiz-score .score-item { text-align: center; }
+.quiz-score .score-num { font-size: 32px; font-weight: 800; }
+.quiz-score .score-label { font-size: 12px; color: var(--text-light); }
+.quiz-score .score-num.correct-color { color: var(--success); }
+.quiz-score .score-num.wrong-color { color: var(--danger); }
+
+/* ===== 进度条 ===== */
+.progress-bar {
+  height: 8px;
+  background: #E8E8E8;
+  border-radius: 4px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--purple));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  padding: 10px 20px; border-radius: 25px;
+  background: #333; color: #fff; font-size: 14px;
+  z-index: 999; animation: slideDown 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+@keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
+
+/* ===== Loading ===== */
+.loading-dots { display: flex; gap: 4px; padding: 10px 14px; }
+.loading-dots span {
+  width: 8px; height: 8px; background: #999; border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
+
+/* ===== 模态框 ===== */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 200;
+  justify-content: center; align-items: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: #fff; border-radius: var(--radius);
+  padding: 24px; width: 90%; max-width: 400px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+  animation: fadeIn 0.3s ease;
+}
+.modal-box h3 { margin-bottom: 16px; font-size: 18px; }
+
+/* ===== 响应式 ===== */
+@media (min-width: 520px) {
+  .app-container { min-height: 100vh; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- 顶部导航 -->
+  <div class="header">
+    <h1><span class="icon">🌟</span>AI 英语小助手</h1>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="openSettings()" title="设置">⚙️</button>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <div class="main-content" id="mainContent">
+
+    <!-- ========== 单词学习页 ========== -->
+    <div class="page active" id="page-vocabulary">
+      <!-- 模式切换 Tab -->
+      <div class="card" style="padding:8px">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" id="tabBuiltin" style="flex:1;background:var(--primary);color:#fff;border-radius:20px" onclick="switchVocabMode('builtin')">📖 内置词库</button>
+          <button class="btn btn-sm" id="tabAI" style="flex:1;background:#E8E8E8;color:#666;border-radius:20px" onclick="switchVocabMode('ai')">🤖 AI 生成</button>
+        </div>
+      </div>
+
+      <!-- 内置词库面板 -->
+      <div class="card" id="panelBuiltin">
+        <div class="card-title">📖 人教版 (PEP) 词库</div>
+        <p style="font-size:12px;color:var(--text-light);margin-bottom:10px">
+          覆盖小学3-6年级全部核心词汇（约650词）
+        </p>
+        <div style="display:flex;gap:8px">
+          <div class="input-group" style="flex:1">
+            <label>年级</label>
+            <select id="builtinGrade" onchange="onBuiltinGradeChange()">
+              <option value="3">三年级</option>
+              <option value="4" selected>四年级</option>
+              <option value="5">五年级</option>
+              <option value="6">六年级</option>
+            </select>
+          </div>
+          <div class="input-group" style="flex:1">
+            <label>学期</label>
+            <select id="builtinTerm" onchange="onBuiltinGradeChange()">
+              <option value="上">上册</option>
+              <option value="下" selected>下册</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>单元</label>
+          <select id="builtinUnit"></select>
+        </div>
+        <div style="font-size:12px;color:var(--text-light);margin-bottom:10px" id="builtinWordCount"></div>
+        <button class="btn btn-success btn-block" onclick="loadBuiltinWords()" id="btnLoadBuiltin">
+          📚 加载词库单词
+        </button>
+      </div>
+
+      <!-- AI 生成面板 -->
+      <div class="card" id="panelAI" style="display:none">
+        <div class="card-title">🤖 AI 生成单词</div>
+        <div class="tag-list" id="vocabTopics">
+          <span class="tag selected" data-topic="animals">🐾 动物</span>
+          <span class="tag" data-topic="fruits">🍎 水果</span>
+          <span class="tag" data-topic="colors">🎨 颜色</span>
+          <span class="tag" data-topic="body">🧍 身体部位</span>
+          <span class="tag" data-topic="family">👨‍👩‍👧 家庭</span>
+          <span class="tag" data-topic="food">🍔 食物</span>
+          <span class="tag" data-topic="school">🏫 学校</span>
+          <span class="tag" data-topic="numbers">🔢 数字</span>
+          <span class="tag" data-topic="weather">🌈 天气</span>
+          <span class="tag" data-topic="clothes">👗 服装</span>
+        </div>
+        <div class="input-group" style="margin-top:8px">
+          <label>年级水平</label>
+          <select id="vocabGrade">
+            <option value="1">一年级 (Grade 1)</option>
+            <option value="2">二年级 (Grade 2)</option>
+            <option value="3" selected>三年级 (Grade 3)</option>
+            <option value="4">四年级 (Grade 4)</option>
+            <option value="5">五年级 (Grade 5)</option>
+            <option value="6">六年级 (Grade 6)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="generateWords()" id="btnGenWords">
+          ✨ AI 生成单词卡片
+        </button>
+      </div>
+
+      <div id="wordCardArea" style="display:none;">
+        <div class="word-card-container" onclick="flipCard()">
+          <div class="word-card" id="wordCard">
+            <div class="word-card-front">
+              <div class="word-english" id="wordEnglish">apple</div>
+              <div class="word-phonetic" id="wordPhonetic">/ˈæp.əl/</div>
+              <button class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.5)" onclick="event.stopPropagation();speakWord()">🔊 听发音</button>
+              <div style="margin-top:12px;font-size:12px;opacity:0.7">👆 点击卡片翻转</div>
+            </div>
+            <div class="word-card-back">
+              <div class="word-chinese" id="wordChinese">苹果</div>
+              <div class="word-example" id="wordExample">I eat an apple every day.</div>
+              <button class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.5);margin-top:12px" onclick="event.stopPropagation();speakWord()">🔊 再听一遍</button>
+            </div>
+          </div>
+        </div>
+        <div class="word-nav">
+          <button class="btn btn-outline btn-sm" onclick="prevWord()">⬅ 上一个</button>
+          <span class="word-counter" id="wordCounter">1 / 10</span>
+          <button class="btn btn-outline btn-sm" onclick="nextWord()">下一个 ➡</button>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="wordProgress" style="width:10%"></div></div>
+      </div>
+    </div>
+
+    <!-- ========== AI 对话页 ========== -->
+    <div class="page" id="page-chat">
+      <div class="card">
+        <div class="card-title">💬 和 AI 老师说英语</div>
+        <p style="font-size:13px;color:var(--text-light);margin-bottom:10px">
+          AI 老师会陪你练习英语对话，回答时尽量用英语哦！
+        </p>
+        <div class="topic-chips" id="chatTopics">
+          <span class="tag" data-topic="自我介绍">👋 自我介绍</span>
+          <span class="tag" data-topic="我的家庭">👨‍👩‍👧 我的家庭</span>
+          <span class="tag" data-topic="我喜欢的食物">🍕 喜欢的食物</span>
+          <span class="tag" data-topic="我的学校">🏫 我的学校</span>
+          <span class="tag" data-topic="我的爱好">⚽ 我的爱好</span>
+          <span class="tag" data-topic="天气">🌈 今天天气</span>
+        </div>
+      </div>
+      <div class="chat-area" id="chatArea">
+        <div class="chat-msg ai">
+          👋 Hello! I'm your English teacher. Let's practice English together!<br>
+          What's your name?
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="输入英语或中文..." onkeypress="if(event.key==='Enter')sendMessage()">
+        <button class="btn btn-primary" onclick="sendMessage()">发送</button>
+      </div>
+    </div>
+
+    <!-- ========== 测验闯关页 ========== -->
+    <div class="page" id="page-quiz">
+      <div class="card">
+        <div class="card-title">🎮 闯关测验</div>
+        <div class="quiz-score">
+          <div class="score-item">
+            <div class="score-num correct-color" id="correctCount">0</div>
+            <div class="score-label">✅ 答对</div>
+          </div>
+          <div class="score-item">
+            <div class="score-num" id="totalCount">0</div>
+            <div class="score-label">📝 总题数</div>
+          </div>
+          <div class="score-item">
+            <div class="score-num wrong-color" id="wrongCount">0</div>
+            <div class="score-label">❌ 答错</div>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="quizProgress" style="width:0%"></div></div>
+        <div class="input-group" style="margin-top:12px">
+          <label>题目难度</label>
+          <select id="quizDifficulty">
+            <option value="easy">⭐ 简单</option>
+            <option value="medium" selected>⭐⭐ 中等</option>
+            <option value="hard">⭐⭐⭐ 困难</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="startQuiz()" id="btnStartQuiz">
+          🚀 开始闯关
+        </button>
+      </div>
+      <div id="quizArea" style="display:none;">
+        <div class="card">
+          <div class="quiz-question" id="quizQuestion">---</div>
+          <div class="quiz-options" id="quizOptions"></div>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="nextQuestion()" id="btnNextQuestion" style="display:none;">
+          ➡ 下一题
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 底部 Tab -->
+  <div class="tab-bar">
+    <button class="tab-item active" data-page="page-vocabulary" onclick="switchTab(this)">
+      <span class="tab-icon">📚</span> 单词学习
+    </button>
+    <button class="tab-item" data-page="page-chat" onclick="switchTab(this)">
+      <span class="tab-icon">💬</span> AI 对话
+    </button>
+    <button class="tab-item" data-page="page-quiz" onclick="switchTab(this)">
+      <span class="tab-icon">🎮</span> 闯关测验
+    </button>
+  </div>
+</div>
+
+<!-- 设置模态框 -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-box">
+    <h3>⚙️ API 设置</h3>
+    <p style="font-size:12px;color:var(--text-light);margin-bottom:12px">
+      请配置 AI 接口。支持 OpenAI 及兼容接口（DeepSeek、通义千问等）。
+    </p>
+    <div class="input-group">
+      <label>API 地址 (Endpoint)</label>
+      <input type="text" id="apiEndpoint" placeholder="https://api.openai.com/v1/chat/completions">
+    </div>
+    <div class="input-group">
+      <label>API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-...">
+    </div>
+    <div class="input-group">
+      <label>模型名称 (Model)</label>
+      <input type="text" id="apiModel" placeholder="gpt-3.5-turbo">
+    </div>
+    <details style="margin-bottom:12px;font-size:12px;">
+      <summary style="cursor:pointer;color:var(--primary);font-weight:600">📋 常用 API 快速填入</summary>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+        <button class="btn btn-sm btn-outline" onclick="fillPreset('openai')">OpenAI</button>
+        <button class="btn btn-sm btn-outline" onclick="fillPreset('deepseek')">DeepSeek</button>
+        <button class="btn btn-sm btn-outline" onclick="fillPreset('qwen')">通义千问</button>
+        <button class="btn btn-sm btn-outline" onclick="fillPreset('zhipu')">智谱GLM</button>
+      </div>
+    </details>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-outline btn-sm" onclick="closeSettings()">取消</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="vocab.js"></script>
+<script>
+// ==================== 全局状态 ====================
+const state = {
+  apiEndpoint: '',
+  apiKey: '',
+  apiModel: '',
+  // 单词学习
+  words: [],
+  currentWordIndex: 0,
+  isFlipped: false,
+  vocabMode: 'builtin',  // 'builtin' | 'ai'
+  // 对话
+  chatHistory: [],
+  // 测验
+  quizQuestions: [],
+  currentQuizIndex: 0,
+  correctCount: 0,
+  wrongCount: 0,
+  quizAnswered: false,
+};
+
+// ==================== 初始化 ====================
+function init() {
+  // 从 localStorage 加载设置
+  state.apiEndpoint = localStorage.getItem('ai_english_endpoint') || '';
+  state.apiKey = localStorage.getItem('ai_english_key') || '';
+  state.apiModel = localStorage.getItem('ai_english_model') || '';
+  
+  document.getElementById('apiEndpoint').value = state.apiEndpoint;
+  document.getElementById('apiKey').value = state.apiKey;
+  document.getElementById('apiModel').value = state.apiModel;
+  
+  // 初始化内置词库单元列表
+  onBuiltinGradeChange();
+
+  // 设置话题标签点击
+  document.querySelectorAll('#vocabTopics .tag').forEach(tag => {
+    tag.addEventListener('click', function() {
+      document.querySelectorAll('#vocabTopics .tag').forEach(t => t.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+  
+  document.querySelectorAll('#chatTopics .tag').forEach(tag => {
+    tag.addEventListener('click', function() {
+      const topic = this.dataset.topic;
+      document.getElementById('chatInput').value = `我们来聊聊：${topic}`;
+      sendMessage();
+    });
+  });
+}
+
+// ==================== Tab 切换 ====================
+function switchTab(el) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(el.dataset.page).classList.add('active');
+}
+
+// ==================== Toast ====================
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.remove(); }, 2500);
+}
+
+// ==================== 设置面板 ====================
+function openSettings() {
+  document.getElementById('apiEndpoint').value = state.apiEndpoint;
+  document.getElementById('apiKey').value = state.apiKey;
+  document.getElementById('apiModel').value = state.apiModel;
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
+function saveSettings() {
+  state.apiEndpoint = document.getElementById('apiEndpoint').value.trim();
+  state.apiKey = document.getElementById('apiKey').value.trim();
+  state.apiModel = document.getElementById('apiModel').value.trim();
+  
+  localStorage.setItem('ai_english_endpoint', state.apiEndpoint);
+  localStorage.setItem('ai_english_key', state.apiKey);
+  localStorage.setItem('ai_english_model', state.apiModel);
+  
+  closeSettings();
+  showToast('✅ 设置已保存！');
+}
+
+const presets = {
+  openai:    { endpoint: 'https://api.openai.com/v1/chat/completions', model: 'gpt-3.5-turbo' },
+  deepseek:  { endpoint: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
+  qwen:      { endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus' },
+  zhipu:     { endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', model: 'glm-4' },
+};
+function fillPreset(name) {
+  const p = presets[name];
+  document.getElementById('apiEndpoint').value = p.endpoint;
+  document.getElementById('apiModel').value = p.model;
+  showToast(`已填入 ${name} 配置，请填写 API Key`);
+}
+
+// ==================== API 调用 ====================
+function checkAPISettings() {
+  if (!state.apiEndpoint || !state.apiKey || !state.apiModel) {
+    showToast('⚠️ 请先在设置中配置 API');
+    openSettings();
+    return false;
+  }
+  return true;
+}
+
+async function callAI(messages, options = {}) {
+  const { temperature = 0.7, max_tokens = 1000 } = options;
+  
+  const response = await fetch(state.apiEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: state.apiModel,
+      messages: messages,
+      temperature: temperature,
+      max_tokens: max_tokens,
+    }),
+  });
+  
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API 请求失败 (${response.status})`);
+  }
+  
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// ==================== 单词模式切换 ====================
+function switchVocabMode(mode) {
+  state.vocabMode = mode;
+  const tabB = document.getElementById('tabBuiltin');
+  const tabA = document.getElementById('tabAI');
+  const panelB = document.getElementById('panelBuiltin');
+  const panelA = document.getElementById('panelAI');
+  
+  if (mode === 'builtin') {
+    tabB.style.background = 'var(--primary)'; tabB.style.color = '#fff';
+    tabA.style.background = '#E8E8E8'; tabA.style.color = '#666';
+    panelB.style.display = 'block'; panelA.style.display = 'none';
+  } else {
+    tabA.style.background = 'var(--primary)'; tabA.style.color = '#fff';
+    tabB.style.background = '#E8E8E8'; tabB.style.color = '#666';
+    panelA.style.display = 'block'; panelB.style.display = 'none';
+  }
+}
+
+// ==================== 内置词库模块 ====================
+function onBuiltinGradeChange() {
+  const grade = parseInt(document.getElementById('builtinGrade').value);
+  const term = document.getElementById('builtinTerm').value;
+  const units = getUnitsByGrade(grade, term);
+  const sel = document.getElementById('builtinUnit');
+  sel.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+  updateBuiltinWordCount();
+}
+
+function updateBuiltinWordCount() {
+  const grade = parseInt(document.getElementById('builtinGrade').value);
+  const term = document.getElementById('builtinTerm').value;
+  const unit = document.getElementById('builtinUnit').value;
+  const words = getWordsByUnit(grade, term, unit);
+  document.getElementById('builtinWordCount').textContent = 
+    `本单元共 ${words.length} 个单词`;
+}
+
+function loadBuiltinWords() {
+  const grade = parseInt(document.getElementById('builtinGrade').value);
+  const term = document.getElementById('builtinTerm').value;
+  const unit = document.getElementById('builtinUnit').value;
+  const rawWords = getWordsByUnit(grade, term, unit);
+  
+  if (rawWords.length === 0) {
+    showToast('⚠️ 该单元暂无单词数据');
+    return;
+  }
+  
+  // 转换为统一格式
+  state.words = rawWords.map(w => ({
+    english: w.e,
+    chinese: w.c,
+    phonetic: '',
+    example: ''
+  }));
+  state.currentWordIndex = 0;
+  state.isFlipped = false;
+  
+  document.getElementById('wordCardArea').style.display = 'block';
+  document.getElementById('wordCard').classList.remove('flipped');
+  updateWordCard();
+  showToast(`✅ 已加载 ${state.words.length} 个单词（${unit}）`);
+  
+  // 滚动到卡片区域
+  document.getElementById('wordCardArea').scrollIntoView({ behavior: 'smooth' });
+}
+
+// 绑定内置词库单词计数更新
+var _unitSel = document.getElementById('builtinUnit');
+if (_unitSel) _unitSel.addEventListener('change', updateBuiltinWordCount);
+
+// ==================== 单词学习模块（AI 生成） ====================
+function getSelectedTopic() {
+  const selected = document.querySelector('#vocabTopics .tag.selected');
+  return selected ? selected.dataset.topic : 'animals';
+}
+
+async function generateWords() {
+  if (!checkAPISettings()) return;
+  
+  const topic = getSelectedTopic();
+  const grade = document.getElementById('vocabGrade').value;
+  const btn = document.getElementById('btnGenWords');
+  btn.disabled = true;
+  btn.textContent = '⏳ AI 正在生成单词...';
+  
+  const topicNames = {
+    animals: '动物', fruits: '水果', colors: '颜色', body: '身体部位',
+    family: '家庭', food: '食物', school: '学校', numbers: '数字',
+    weather: '天气', clothes: '服装'
+  };
+  
+  try {
+    const prompt = `你是一个小学英语老师。请生成10个关于"${topicNames[topic]}"的英语单词，适合小学${grade}年级学生。
+要求返回严格的JSON格式（不要markdown代码块）：
+[
+  {"english": "apple", "chinese": "苹果", "phonetic": "/ˈæp.əl/", "example": "I eat an apple every day."},
+  ...
+]
+注意：example例句要简单，适合小学生理解。`;
+
+    const content = await callAI([
+      { role: 'system', content: '你是一个专业的小学英语老师。只返回JSON，不要任何额外文字。' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0.8, max_tokens: 2000 });
+    
+    // 解析 JSON（处理可能的 markdown 代码块）
+    let jsonStr = content.trim();
+    if (jsonStr.startsWith('```')) {
+      jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    }
+    state.words = JSON.parse(jsonStr);
+    state.currentWordIndex = 0;
+    state.isFlipped = false;
+    
+    // 显示卡片区域
+    document.getElementById('wordCardArea').style.display = 'block';
+    document.getElementById('wordCard').classList.remove('flipped');
+    updateWordCard();
+    showToast(`✅ 已生成 ${state.words.length} 个单词！`);
+  } catch (err) {
+    showToast('❌ 生成失败：' + err.message);
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ AI 生成单词卡片';
+  }
+}
+
+function updateWordCard() {
+  if (state.words.length === 0) return;
+  const word = state.words[state.currentWordIndex];
+  document.getElementById('wordEnglish').textContent = word.english;
+  document.getElementById('wordPhonetic').textContent = word.phonetic || '';
+  document.getElementById('wordChinese').textContent = word.chinese;
+  document.getElementById('wordExample').textContent = word.example || '';
+  document.getElementById('wordCounter').textContent = `${state.currentWordIndex + 1} / ${state.words.length}`;
+  document.getElementById('wordProgress').style.width = `${((state.currentWordIndex + 1) / state.words.length) * 100}%`;
+  state.isFlipped = false;
+  document.getElementById('wordCard').classList.remove('flipped');
+}
+
+function flipCard() {
+  if (state.words.length === 0) return;
+  state.isFlipped = !state.isFlipped;
+  if (state.isFlipped) {
+    document.getElementById('wordCard').classList.add('flipped');
+  } else {
+    document.getElementById('wordCard').classList.remove('flipped');
+  }
+}
+
+function prevWord() {
+  if (state.words.length === 0) return;
+  state.currentWordIndex = (state.currentWordIndex - 1 + state.words.length) % state.words.length;
+  updateWordCard();
+}
+
+function nextWord() {
+  if (state.words.length === 0) return;
+  state.currentWordIndex = (state.currentWordIndex + 1) % state.words.length;
+  updateWordCard();
+}
+
+function speakWord() {
+  if (state.words.length === 0) return;
+  const word = state.words[state.currentWordIndex].english;
+  speak(word);
+}
+
+// ==================== 语音朗读 (Web Speech API) ====================
+function speak(text) {
+  if (!('speechSynthesis' in window)) {
+    showToast('⚠️ 你的浏览器不支持语音功能');
+    return;
+  }
+  // 取消正在进行的朗读
+  window.speechSynthesis.cancel();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.85;  // 稍慢，适合小学生
+  utterance.pitch = 1.0;
+  
+  // 尝试选择英语语音
+  const voices = window.speechSynthesis.getVoices();
+  const enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'))
+    || voices.find(v => v.lang.startsWith('en-US'))
+    || voices.find(v => v.lang.startsWith('en'));
+  if (enVoice) utterance.voice = enVoice;
+  
+  window.speechSynthesis.speak(utterance);
+}
+
+// 预加载语音列表
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+}
+
+// ==================== AI 对话模块 ====================
+const CHAT_SYSTEM_PROMPT = `你是一个友好、耐心的小学英语老师，名字叫"小英老师"。你的任务：
+1. 用简单英语和学生对话，偶尔用中文解释
+2. 当学生用英语回答时，如果有语法错误，用括号标注正确说法
+3. 鼓励学生多开口，每次回复控制在3-5句话
+4. 根据学生的英语水平调整难度（小学1-6年级）
+5. 回复格式：先说英语（加粗提示正确说法），然后附中文翻译
+
+示例回复：
+**Great answer!** (You said "I go to school yesterday" → better: "I went to school yesterday")
+你太棒了！记得"昨天"的事情要用过去式哦。`;
+
+async function sendMessage() {
+  if (!checkAPISettings()) return;
+  
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  input.value = '';
+  
+  // 添加用户消息
+  appendChatMessage('user', text);
+  state.chatHistory.push({ role: 'user', content: text });
+  
+  // 显示加载中
+  const loadingEl = appendChatMessage('ai', '<div class="loading-dots"><span></span><span></span><span></span></div>', true);
+  
+  try {
+    const messages = [
+      { role: 'system', content: CHAT_SYSTEM_PROMPT },
+      ...state.chatHistory.slice(-10), // 保留最近10条
+    ];
+    
+    const reply = await callAI(messages, { temperature: 0.8, max_tokens: 500 });
+    
+    // 移除加载动画
+    loadingEl.remove();
+    
+    // 渲染 AI 回复（支持简单 markdown）
+    appendChatMessage('ai', formatChatReply(reply));
+    state.chatHistory.push({ role: 'assistant', content: reply });
+    
+    // 滚动到底部
+    const chatArea = document.getElementById('chatArea');
+    chatArea.scrollTop = chatArea.scrollHeight;
+  } catch (err) {
+    loadingEl.remove();
+    appendChatMessage('ai', '抱歉，出了点问题 😢\n' + err.message);
+    console.error(err);
+  }
+}
+
+function appendChatMessage(role, content, isTemp = false) {
+  const chatArea = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = content;
+  if (!isTemp) chatArea.appendChild(div);
+  else chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return isTemp ? div : null;
+}
+
+function formatChatReply(text) {
+  // 处理 **bold** 
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // 处理换行
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+// ==================== 测验闯关模块 ====================
+async function startQuiz() {
+  if (!checkAPISettings()) return;
+  
+  const difficulty = document.getElementById('quizDifficulty').value;
+  const btn = document.getElementById('btnStartQuiz');
+  btn.disabled = true;
+  btn.textContent = '⏳ AI 正在出题...';
+  
+  const diffNames = { easy: '简单', medium: '中等', hard: '困难' };
+  
+  try {
+    const prompt = `你是一个小学英语老师。请生成5道小学英语测验题，难度：${diffNames[difficulty]}。
+题型包括选择题和拼写题混合。
+要求返回严格的JSON格式（不要markdown代码块）：
+[
+  {
+    "type": "choice",
+    "question": "哪个是"苹果"的英文？",
+    "options": ["apple", "banana", "orange", "grape"],
+    "answer": 0,
+    "explanation": "apple 是苹果的意思"
+  },
+  {
+    "type": "spell",
+    "question": "请听发音，拼写这个单词：/ˈæp.əl/ (提示：一种红色的水果)",
+    "answer": "apple",
+    "explanation": "apple 拼写为 a-p-p-l-e"
+  },
+  ...
+]
+对于 spell 类型，options 字段可以省略。`;
+
+    const content = await callAI([
+      { role: 'system', content: '你是一个专业的小学英语老师。只返回JSON，不要任何额外文字。' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0.8, max_tokens: 2000 });
+    
+    let jsonStr = content.trim();
+    if (jsonStr.startsWith('```')) {
+      jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    }
+    state.quizQuestions = JSON.parse(jsonStr);
+    state.currentQuizIndex = 0;
+    state.correctCount = 0;
+    state.wrongCount = 0;
+    
+    document.getElementById('quizArea').style.display = 'block';
+    document.getElementById('correctCount').textContent = '0';
+    document.getElementById('totalCount').textContent = '0';
+    document.getElementById('wrongCount').textContent = '0';
+    document.getElementById('quizProgress').style.width = '0%';
+    document.getElementById('btnNextQuestion').style.display = 'none';
+    
+    renderQuestion();
+    showToast(`✅ 已生成 ${state.quizQuestions.length} 道题！`);
+  } catch (err) {
+    showToast('❌ 出题失败：' + err.message);
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 开始闯关';
+  }
+}
+
+function renderQuestion() {
+  if (state.currentQuizIndex >= state.quizQuestions.length) {
+    finishQuiz();
+    return;
+  }
+  
+  state.quizAnswered = false;
+  const q = state.quizQuestions[state.currentQuizIndex];
+  const quizQuestion = document.getElementById('quizQuestion');
+  const quizOptions = document.getElementById('quizOptions');
+  const btnNext = document.getElementById('btnNextQuestion');
+  
+  btnNext.style.display = 'none';
+  
+  if (q.type === 'spell') {
+    quizQuestion.innerHTML = `
+      ${q.question}<br>
+      <button class="btn btn-sm btn-outline" style="margin-top:8px" onclick="speak('${q.answer.replace(/'/g, "\\'")}')">🔊 听发音</button>
+    `;
+    quizOptions.innerHTML = `
+      <div class="input-group">
+        <input type="text" id="spellInput" placeholder="请输入单词拼写..." style="text-align:center;font-size:20px">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="checkSpell()">✅ 提交答案</button>
+      <div id="spellResult" style="text-align:center;margin-top:8px;font-size:14px"></div>
+    `;
+  } else {
+    // choice 类型 - 加上发音按钮
+    const answerWord = q.options[q.answer];
+    quizQuestion.innerHTML = `
+      ${q.question}
+      <button class="btn btn-sm btn-outline" style="margin-left:8px;vertical-align:middle" onclick="speak('${answerWord.replace(/'/g, "\\'")}')" title="听发音">🔊</button>
+    `;
+    quizOptions.innerHTML = q.options.map((opt, i) => `
+      <button class="quiz-option" onclick="checkAnswer(${i}, this)" data-index="${i}">${opt}</button>
+    `).join('');
+  }
+  
+  // 更新进度
+  document.getElementById('totalCount').textContent = state.currentQuizIndex + 1;
+  document.getElementById('quizProgress').style.width = `${((state.currentQuizIndex) / state.quizQuestions.length) * 100}%`;
+}
+
+function checkAnswer(index, el) {
+  if (state.quizAnswered) return;
+  state.quizAnswered = true;
+  
+  const q = state.quizQuestions[state.currentQuizIndex];
+  const isCorrect = index === q.answer;
+  
+  // 禁用所有选项
+  document.querySelectorAll('.quiz-option').forEach(btn => btn.disabled = true);
+  
+  // 高亮正确答案
+  const correctEl = document.querySelector(`.quiz-option[data-index="${q.answer}"]`);
+  if (correctEl) correctEl.classList.add('correct');
+  
+  if (isCorrect) {
+    el.classList.add('correct');
+    state.correctCount++;
+    document.getElementById('correctCount').textContent = state.correctCount;
+    showToast('🎉 太棒了！答对了！');
+  } else {
+    el.classList.add('wrong');
+    state.wrongCount++;
+    document.getElementById('wrongCount').textContent = state.wrongCount;
+    showToast('😅 不对哦，看看正确答案吧');
+  }
+  
+  // 显示解释
+  const explanation = document.createElement('div');
+  explanation.style.cssText = 'text-align:center;margin-top:8px;font-size:13px;color:var(--text-light)';
+  explanation.textContent = '💡 ' + (q.explanation || '');
+  document.getElementById('quizOptions').appendChild(explanation);
+  
+  // 显示下一题按钮
+  document.getElementById('btnNextQuestion').style.display = 'block';
+  document.getElementById('quizProgress').style.width = `${((state.currentQuizIndex + 1) / state.quizQuestions.length) * 100}%`;
+}
+
+function checkSpell() {
+  if (state.quizAnswered) return;
+  state.quizAnswered = true;
+  
+  const q = state.quizQuestions[state.currentQuizIndex];
+  const input = document.getElementById('spellInput').value.trim().toLowerCase();
+  const isCorrect = input === q.answer.toLowerCase();
+  const resultEl = document.getElementById('spellResult');
+  
+  if (isCorrect) {
+    state.correctCount++;
+    document.getElementById('correctCount').textContent = state.correctCount;
+    resultEl.innerHTML = '<span style="color:var(--success)">🎉 拼写正确！</span>';
+  } else {
+    state.wrongCount++;
+    document.getElementById('wrongCount').textContent = state.wrongCount;
+    resultEl.innerHTML = `<span style="color:var(--danger)">😅 正确答案是：<strong>${q.answer}</strong></span>`;
+  }
+  
+  if (q.explanation) {
+    resultEl.innerHTML += `<br><span style="color:var(--text-light)">💡 ${q.explanation}</span>`;
+  }
+  
+  document.getElementById('btnNextQuestion').style.display = 'block';
+  document.getElementById('quizProgress').style.width = `${((state.currentQuizIndex + 1) / state.quizQuestions.length) * 100}%`;
+}
+
+function nextQuestion() {
+  state.currentQuizIndex++;
+  renderQuestion();
+}
+
+function finishQuiz() {
+  const total = state.quizQuestions.length;
+  const correct = state.correctCount;
+  const stars = correct === total ? '🌟🌟🌟' : correct >= total * 0.7 ? '🌟🌟' : correct >= total * 0.4 ? '🌟' : '';
+  
+  document.getElementById('quizQuestion').textContent = `🎊 闯关完成！${stars}`;
+  document.getElementById('quizOptions').innerHTML = `
+    <div style="text-align:center;padding:20px">
+      <div style="font-size:48px;margin-bottom:12px">${stars || '💪'}</div>
+      <div style="font-size:18px;margin-bottom:8px">答对 <strong style="color:var(--success)">${correct}</strong> / ${total} 题</div>
+      <div style="font-size:14px;color:var(--text-light);margin-bottom:16px">
+        ${correct === total ? '全部答对，你太厉害了！' : correct >= total * 0.7 ? '表现不错，继续加油！' : '还需要多练习哦，加油！'}
+      </div>
+      <button class="btn btn-primary" onclick="startQuiz()">🔄 再来一关</button>
+    </div>
+  `;
+  document.getElementById('btnNextQuestion').style.display = 'none';
+  document.getElementById('quizProgress').style.width = '100%';
+}
+
+// ==================== 键盘快捷键 ====================
+document.addEventListener('keydown', function(e) {
+  // 单词卡片翻页：左右箭头
+  const vocabPage = document.getElementById('page-vocabulary');
+  if (vocabPage.classList.contains('active')) {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevWord(); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); nextWord(); }
+    if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); flipCard(); }
+  }
+});
+
+// ==================== 点击模态框外部关闭 ====================
+document.getElementById('settingsModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSettings();
+});
+
+// ==================== 启动 ====================
+init();
+</script>
+
+</body>
+</html>
